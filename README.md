@@ -54,3 +54,5 @@ CREATE (rfc)-[:OBSOLETES]->(obsoletesrfc)
 ```
 
 One can then use the various queries as documented in the whitepaper to query the necessary information and to create the desired connected graphs of relationships.
+
+Related summary blog post: https://research.nccgroup.com/?p=6870
