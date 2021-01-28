@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-# Matt Lewis, NCc Group 2020
+# Matt Lewis, NCC Group 2020
 #
 # iterates over corpus of RFC text and extracts
 # email addresses of contributors etc.
