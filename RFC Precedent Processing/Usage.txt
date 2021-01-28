@@ -1,3 +1,6 @@
+# Once the RFC JSON has been parsed it creates CSV files of relationships.
+# Use below to create the graph database of those CSV files, within neo4j.
+
 CREATE INDEX ON :RFC(name)
 
 LOAD CSV WITH HEADERS FROM 'file:///standalone.csv' AS csvLine
