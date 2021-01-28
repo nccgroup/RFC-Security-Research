@@ -1,0 +1,24 @@
+CREATE INDEX ON :RFC(name)
+
+LOAD CSV WITH HEADERS FROM 'file:///standalone.csv' AS csvLine
+MERGE (rfc:RFC {name: csvLine.rfc, title: csvLine.title})
+
+LOAD CSV WITH HEADERS FROM 'file:///updated_by.csv' AS csvLine
+MERGE (rfc:RFC {name: csvLine.rfc, title: csvLine.title})
+MERGE (updaterfc:Updaterfc {name: csvLine.updatedby})
+CREATE (rfc)-[:UPDATED_BY]->(updaterfc)
+
+LOAD CSV WITH HEADERS FROM 'file:///updates.csv' AS csvLine
+MERGE (rfc:RFC {name: csvLine.rfc, title: csvLine.title})
+MERGE (updatesrfc:Updatesrfc {name: csvLine.updates})
+CREATE (rfc)-[:UPDATES]->(updatesrfc)
+
+LOAD CSV WITH HEADERS FROM 'file:///obsoleted_by.csv' AS csvLine
+MERGE (rfc:RFC {name: csvLine.rfc, title: csvLine.title})
+MERGE (obsoletedbyrfc:Obsoletedbyrfc {name: csvLine.obsoletedby})
+CREATE (rfc)-[:OBSOLETED_BY]->(obsoletedbyrfc)
+
+LOAD CSV WITH HEADERS FROM 'file:///obsoletes.csv' AS csvLine
+MERGE (rfc:RFC {name: csvLine.rfc, title: csvLine.title})
+MERGE (obsoletesrfc:Obsoletesrfc {name: csvLine.obsoletes})
+CREATE (rfc)-[:OBSOLETES]->(obsoletesrfc)

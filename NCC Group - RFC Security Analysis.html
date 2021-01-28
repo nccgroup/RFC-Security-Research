@@ -1,0 +1,1545 @@
+
+<!-- saved from url=(0133)https://xml2rfc.tools.ietf.org/cgi-bin/cat.cgi/mattrfc.md.txt?input=6665f1cd1d0237db29e89596e45770d71ade7353e809993d9d5d31-1604589101 -->
+<html><head><meta http-equiv="Content-Type" content="text/html; charset=UTF-8"></head><body><pre style="word-wrap: break-word; white-space: pre-wrap;">
+
+
+
+NCC Group Research                                              M. Lewis
+For Discussion                                                 NCC Group
+Intended status: Informational                          January 28, 2020
+
+
+  Investigating Potential Security Vulnerability Manifestation through
+   Various Analyses &amp; Inferences Regarding Internet RFCs, and how RFC
+                       Security might be Improved
+
+Abstract
+
+   RFCs have played a pivotal role in helping to formalise ideas and
+   requirements for much of the Internet's design and engineering.  They
+   have facilitated peer review amongst engineers, researchers and
+   computer scientists, which in turn has resulted in specification of
+   key Internet protocols and their behaviours so that developers can
+   implement those protocols in products and services, with a degree of
+   certainty around correctness in design and interoperability between
+   different implementations.  Security considerations within RFCs were
+   not present from the outset, but rather, evolved over time as the
+   Internet grew in size and complexity, and as our understanding of
+   security concepts and best practices matured.  Arguably, security
+   requirements across the corpus of RFCs (almost 8,900 at the time of
+   writing) has been inconsistent, and perhaps attests to how and when
+   we often see security vulnerabilities manifest themselves both in
+   protocol design, and subsequent implementation.
+
+   In this document we explore properties of RFCs in terms of security,
+   performing certain analyses on how security is (or isn't) prescribed
+   in attempts at trying to understand more specifically, how and why
+   security vulnerabilities manifest themselves from design to
+   implementation.  To help us in this endeavour we utilise different
+   methods of analysis including graph databases to explore and query
+   relationships between different properties of RFCs.  Our ultimate
+   intention from this research is to use any key observations and
+   insights to stimulate further thought and discussion on how and where
+   security improvements could be made to the RFC process, allowing for
+   maximised security assurance at protocol specification and design so
+   as to facilitate security and defence-in-depth.  More broadly, we
+   propose that using graph databases to assess bodies of knowledge like
+   RFCs and their interrelationships provides useful ways of performing
+   analysis and deriving new insights.
+
+
+
+
+
+
+
+
+Lewis                                                           [Page 1]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+Status of This Memo
+
+   This document provides information for the Internet community. It 
+   does not specify an Internet standard. Distribution of this document 
+   is unlimited.
+
+
+Table of Contents
+
+   1.  Brief Background on RFCs  . . . . . . . . . . . . . . . . . .   3
+   2.  Keywords for Requirement Levels - Interpretation  . . . . . .   3
+   3.  Top 10 RFC Usage of Key Words . . . . . . . . . . . . . . . .   6
+   4.  RFC Security Considerations Section . . . . . . . . . . . . .  11
+   5.  A Case Study with Internet Printing Protocol  . . . . . . . .  11
+   6.  Other interesting RFC text searches that may be security-
+       relevant (AKA finding good targets for fuzzing) . . . . . . .  15
+     6.1.  Augmenting RFC Analysis with Diff Tools to Identify
+           Potential Security Issues . . . . . . . . . . . . . . . .  16
+   7.  Using Graph Databases to Track RFC Development &amp; Asses
+       Internet Complexity . . . . . . . . . . . . . . . . . . . . .  18
+     7.1.  Visualising RFC Development . . . . . . . . . . . . . . .  18
+     7.2.  Visualising RFC Contributors  . . . . . . . . . . . . . .  19
+     7.3.  Most Contributed RFCs . . . . . . . . . . . . . . . . . .  19
+
+
+
+Lewis                                                           [Page 2]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+     7.4.  Most Contribution by Organisation . . . . . . . . . . . .  19
+   8.  Conclusions . . . . . . . . . . . . . . . . . . . . . . . . .  20
+     8.1.  Simplified (and mandated) Requirements Level Keywords . .  20
+     8.2.  Improvements to Security Considerations . . . . . . . . .  21
+     8.3.  RFC Analysis as a Method of Identifying Fuzzing Targets &amp;
+           Potential Implementation Flaws  . . . . . . . . . . . . .  22
+     8.4.  Graph Databases to Inspect Properties of RFCs . . . . . .  22
+   9.  50 Years of RFCs &amp; What Next? . . . . . . . . . . . . . . . .  22
+   10. Security Considerations . . . . . . . . . . . . . . . . . . .  24
+   11. IANA Considerations . . . . . . . . . . . . . . . . . . . . .  24
+   12. References  . . . . . . . . . . . . . . . . . . . . . . . . .  24
+     12.1.  Normative References . . . . . . . . . . . . . . . . . .  24
+     12.2.  URIs . . . . . . . . . . . . . . . . . . . . . . . . . .  26
+   Acknowledgments . . . . . . . . . . . . . . . . . . . . . . . . .  28
+   Author's Address  . . . . . . . . . . . . . . . . . . . . . . . .  28
+
+1.  Brief Background on RFCs
+
+   Request for Comments (RFC) documents are authored by technical
+   individuals or groups of computer scientists and network engineers,
+   and published via the Internet Society (ISOC) and its associated
+   bodies; notably the Internet Engineering Task Force (IETF).
+
+   The first [RFC0001] was by RFC conceiver Steve Crocker [1] and
+   released on 7 April 1969.  At the time of writing there are almost
+   8900 [2] RFCs, many of which set out and describe the inner workings
+   of the myriad of protocols that underpin the Internet as we know and
+   use it.  RFCs are authored in the form of memoranda and set out
+   (often formally) the specifications for Internet-related
+   specifications, protocols and procedures.  RFCs then undergo peer
+   review and some may eventually be adopted and published by the IETF
+   as Internet Standards.
+
+2.  Keywords for Requirement Levels - Interpretation
+
+   When designing and specifying any type of formal system or protocol,
+   unambiguous language is crucial in order to ensure accuracy in both
+   the design of those systems and protocols, and in their subsequent
+   implementation.  Ambiguous language can also result in
+   interoperability issues between different implementations of the same
+   system or protocol.  Clarity in language is also paramount for
+   security - uncertainty in design can lead to vulnerability whereby
+   different developers may interpret requirements or specifications
+   differently, and as a result inadvertently or unintentionally
+   introduce vulnerable code during the software development process.
+
+   [RFC2119] seeks to address this topic through specification of key
+   words to be used in RFCs that indicate different levels of
+
+
+
+Lewis                                                           [Page 3]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   requirements.  It sets out 11 key words with guidance on their
+   interpretations:
+
+   "MUST", "MUST NOT", "REQUIRED", "SHALL", "SHALL NOT", "SHOULD",
+   "SHOULD NOT", "RECOMMENDED", "NOT RECOMMENDED", MAY", and "OPTIONAL".
+
+   Our analysis of these key words is that they can essentially be
+   categorised in one of two types:
+
+   Unambiguous key words:
+
+   o  MUST, REQUIRED, SHALL, MUST NOT, SHALL NOT
+
+   Ambiguous key words:
+
+   o  SHOULD, RECOMMENDED, SHOULD NOT, NOT RECOMMENDED, MAY, OPTIONAL
+
+   What we mean by unambiguous key words is that it is clear that
+   something has to happen (or not).  I.e. there's no choice with
+   unambiguous key words.  Ambiguous key words on the other hand present
+   choice, or option, and as such different people will likely enact
+   different choices (e.g. in development) when interpreting ambiguous
+   key words.  Our hypothesis is that security vulnerabilities are more
+   likely to manifest themselves when ambiguous key words are used, and
+   implemented differently by different developers.  Indeed, [RFC2119]
+   touches on this theme in its Section 7 - Security Considerations:
+
+   "These terms are frequently used to specify behavior with security
+   implications.  The effects on security of not implementing a MUST or
+   SHOULD, or doing something the specification says MUST NOT or SHOULD
+   NOT be done may be very subtle.  Document authors should take the
+   time to elaborate the security implications of not following
+   recommendations or requirements as most implementors will not have
+   had the benefit of the experience and discussion that produced the
+   specification."
+
+   Also relevant to this part of our analysis is noting that [RFC8174]
+   which updates [RFC2119] states that the key words have their intended
+   meaning only when they are written in all capitals.  In addition, it
+   is made clear that using the key words is not required: "They are
+   used for clarity and consistency when that is what's wanted, but a
+   lot of normative text does not use them and is still normative."
+
+   The first part of our RFC research thus set out to explore patterns
+   or correlations between the number of unambiguous and ambiguous key
+   words used in RFCs, and the number of subsequent publicly known
+   security flaws in different implementations of those RFCs.  We used a
+
+
+
+
+Lewis                                                           [Page 4]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   simple script to parse the number of different uppercase key words
+   within each RFC - some caveats to this exercise:
+
+   o  Not all RFCs are standards; some are just memos but which might
+      utilise the uppercase requirement keywords, thus the results below
+      across all RFCs are indicative rather than absolute
+
+   o  The analysis below was performed on all RFCs available as of
+      August 13 2020.
+
+                   +-----------------+-----------------+
+                   | Keyword         | # of Occurences |
+                   +-----------------+-----------------+
+                   | SHALL           |      10,239     |
+                   |                 |                 |
+                   | MAY             |      37,596     |
+                   |                 |                 |
+                   | REQUIRED        |      8,240      |
+                   |                 |                 |
+                   | RECOMMENDED     |      9,458      |
+                   |                 |                 |
+                   | SHOULD          |      44,846     |
+                   |                 |                 |
+                   | MUST NOT        |      21,864     |
+                   |                 |                 |
+                   | SHALL NOT       |      4,743      |
+                   |                 |                 |
+                   | SHOULD NOT      |      10,148     |
+                   |                 |                 |
+                   | NOT RECOMMENDED |      1,218      |
+                   |                 |                 |
+                   | OPTIONAL        |      11,555     |
+                   |                 |                 |
+                   | MUST            |     111,102     |
+                   +-----------------+-----------------+
+
+   Key observations from the graph above include:
+
+   o  The MUST keyword was the most used (111,102 instances).  This is
+      probably to be expected in a large corpus of protocol and standard
+      specifications
+
+   o  SHOULD (44,846) and MAY (37,596) were the next two highest number
+      of key word occurrences - this is interesting in that these are
+      what we've termed Ambiguous key words, possibly resulting in
+      different interpretations by different implementers
+
+
+
+
+
+Lewis                                                           [Page 5]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   o  The total number of Unambiguous key words across all RFCs was
+      156,188.  The total number of Ambiguous key words across all RFCs
+      was 114,821.  For a large corpus of protocol and standard
+      specifications, we might have expected a far greater difference
+      between the number of Ambiguous and Unambiguous key words
+
+   o  3,440 of the RFCs made no use of any of the Requirements Level
+      keywords (in the required all capitals) - this accounts for around
+      40% of the RFCs (but recalling that the use of these keywords is
+      not mandatory)
+
+3.  Top 10 RFC Usage of Key Words
+
+   At this point we delved a bit deeper into the specific RFCs making
+   most use of each key word (top ten), and sought to identify any
+   interesting correlations with publicly known vulnerabilities in
+   implementations of those RFCs, as searched across the NIST database
+   of CVEs [3].
+
+   We also reduced the scope of RFCs investigated to those most aligned
+   to specific protocols and standards.  Many of the RFCs do not relate
+   to protocols or standards, but might simply be labelled
+   'INFORMATIONAL', 'EXPERIMENTAL' amongst other non-standard statuses
+   [4].  As such for this exercise we focussed on those RFCs labelled as
+   either:
+
+   o  'INTERNET STANDARD' - 154 RFCs; or
+
+   o  'PROPOSED STANDARD' - 3,756 RFCs
+
+   We note also that this particular exercise is not exact in that the
+   keyword search results for protocol names across CVEs in the NIST
+   database weren't vetted in detail, thus the figures in the output
+   from this exercise are indicative rather than concrete.
+
+   [RFC2543] Session Initiation Protocol (SIP):
+
+   o  SHALL 0
+
+   o  REQUIRED 0
+
+   o  MAY 165
+
+   o  OPTIONAL 1
+
+   o  RECOMMENDED 0
+
+   o  SHOULD 110
+
+
+
+Lewis                                                           [Page 6]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   o  MUST 160
+
+   o  ~CVEs 419 [5]
+
+   [RFC3261] Session Initiation Protocol (SIP):
+
+   o  SHALL 0
+
+   o  REQUIRED 0
+
+   o  MAY 188
+
+   o  OPTIONAL 0
+
+   o  RECOMMENDED 0
+
+   o  SHOULD 233
+
+   o  MUST 472
+
+   o  ~CVEs 419 [6]
+
+   [RFC3459] Critical Content MIME Parameter:
+
+   o  SHALL 0
+
+   o  REQUIRED 0
+
+   o  MAY 3
+
+   o  OPTIONAL 3
+
+   o  RECOMMENDED 1
+
+   o  SHOULD 0
+
+   o  MUST 9
+
+   o  ~CVEs 326 [7]
+
+   [RFC5661] Network File System (NFS) V4:
+
+   o  SHALL 0
+
+   o  REQUIRED 55
+
+   o  MAY 149
+
+
+
+
+Lewis                                                           [Page 7]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   o  OPTIONAL 18
+
+   o  RECOMMENDED 1
+
+   o  SHOULD 173
+
+   o  MUST 539
+
+   o  ~CVEs 196 [8]
+
+   [RFC6921] Remote Authentication Dial-In User Service (RADIUS):
+
+   o  SHALL 1
+
+   o  REQUIRED 0
+
+   o  MAY 13
+
+   o  OPTIONAL 0
+
+   o  RECOMMENDED 7
+
+   o  SHOULD 39
+
+   o  MUST 55
+
+   o  ~CVEs 119 [9]
+
+   [RFC7826] Real-Time Streaming Protocol (RTSP) 2.0:
+
+   o  SHALL 35
+
+   o  REQUIRED 5
+
+   o  MAY 146
+
+   o  OPTIONAL 1
+
+   o  RECOMMENDED 0
+
+   o  SHOULD 118
+
+   o  MUST 335
+
+   o  ~CVEs 98 [10]
+
+   [RFC3920] Extensible Messaging and Presence Protocol (XMPP) Core:
+
+
+
+
+Lewis                                                           [Page 8]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   o  SHALL 0
+
+   o  REQUIRED 7
+
+   o  MAY 43
+
+   o  OPTIONAL 8
+
+   o  RECOMMENDED 0
+
+   o  SHOULD 103
+
+   o  MUST 161
+
+   o  ~CVEs 77 [11]
+
+   [RFC6120] Extensible Messaging and Presence Protocol (XMPP) Core:
+
+   o  SHALL 2
+
+   o  REQUIRED 12
+
+   o  MAY 73
+
+   o  OPTIONAL 7
+
+   o  RECOMMENDED 0
+
+   o  SHOULD 121
+
+   o  MUST 270
+
+   o  ~CVEs 77 [12]
+
+   [RFC2408] Internet Security Association and Key Management Protocol
+   (ISAKMP):
+
+   o  SHALL 0
+
+   o  REQUIRED 2
+
+   o  MAY 73
+
+   o  OPTIONAL 0
+
+   o  RECOMMENDED 2
+
+   o  SHOULD 27
+
+
+
+Lewis                                                           [Page 9]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   o  MUST 93
+
+   o  ~CVEs 68 [13]
+
+   [RFC2068] Hypertext Transfer Protocol (HTTP) 1.1:
+
+   o  SHALL 0
+
+   o  REQUIRED 0
+
+   o  MAY 83
+
+   o  OPTIONAL 0
+
+   o  RECOMMENDED 0
+
+   o  SHOULD 149
+
+   o  MUST 167
+
+   o  ~CVEs 60 [14]
+
+   A brief analysis of the data above highlighted the following:
+
+   o  The Session Initiation Protocol (SIP) was the protocol definition
+      making most use of ambiguous keywords, and which appears to have
+      resulted in most implementation flaws
+
+   o  Quite a few of the protocols in the table relate to extension to
+      existing protocols, and/or transmission/tunnelling of newer
+      protocols over existing ones.  This might hint towards extension
+      of functionality correlating with more likelihood of introduction
+      of security issues, by design and/or implementation
+
+   o  In the top 10 analysis of key word usage, there were no instances
+      of the keywords MUST NOT, SHOULD NOT, NOT RECOMMENDED and SHALL
+      NOT.  Three of these terms are unambiguous and we might expect
+      more prudent use of them when defining their underlying protocols
+
+   o  There appear to be implementation flaws for pretty much all
+      protocols in the table above.  This shows that there are likely
+      issues in how protocols (and their security aspects) are
+      specified, and how those specifications are interpreted by
+      developers
+
+
+
+
+
+
+
+Lewis                                                          [Page 10]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+4.  RFC Security Considerations Section
+
+   In 2003, [RFC3552] was released as a current best practice guide on
+   the topic of "Guidelines for Writing RFC Text on Security
+   Considerations".  Its abstract states:
+
+   "All RFCs are required to have a Security Considerations section.
+   Historically, such sections have been relatively weak.  This document
+   provides guidelines to RFC authors on how to write a good Security
+   Considerations section."
+
+   [RFC3552] provides fairly general yet useful advice on various
+   security considerations with an encouragement to perform threat
+   modelling.  Section 5 specially calls out:
+
+   "
+
+   Authors MUST describe
+
+     1.   which attacks are out of scope (and why!)
+     2.   which attacks are in-scope
+     2.1  and the protocol is susceptible to
+     2.2  and the protocol protects against
+
+   "
+
+   Curiously, the advice and guidance in this RFC is based more on post-
+   implementation and operational aspects of protocol security (e.g. use
+   transport security, authenticate endpoints etc.) - i.e. it doesn't
+   provide any guidance on how to formally and securely specify and
+   design protocols, such as calling out validation of upper/lower
+   bounds and limits on values, using clear and concise language to
+   avoid ambiguity (RFC Requirement Levels) etc.
+
+   Of the 3904 RFCs that were 'INTERNET' or 'PROPOSED' Standards, 3778
+   had a Security Considerations section, meaning that 126 did not.  Of
+   those 3778 RFCs that did have a Security Considerations section, 154
+   of them had the following disappointing entry in their Security
+   Considerations section:
+
+   "Security issues are not discussed in this memo."
+
+5.  A Case Study with Internet Printing Protocol
+
+   The Internet Printing Protocol (IPP) was one of the protocols that
+   featured in the top list of use of ambiguous key words.  Around 23
+   CVEs were found relating to publicly known vulnerabilities in IPP and
+   quite a few of those CVEs were discovered by NCC Group researchers
+
+
+
+Lewis                                                          [Page 11]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   Daniel Romero and Mario Rivas during their 2019 research into the
+   security of enterprise printers [15].
+
+   Given our familiarity with implementation flaws in IPP, we therefore
+   set out to explore the affected [RFC8011] to understand if or how the
+   vulnerabilities that we found, manifested from incorrect, missing, or
+   presumed security specification within the IPP RFC.
+
+   Our fist observation was that [RFC8011] (Internet Printing
+   Protocol/1.1: Model and Semantics) from 2017, obsoletes a few earlier
+   versions of itself: [RFC2911], [RFC3381] and [RFC3382] with
+   [RFC2911], dating back to 2000, meaning at the time of writing, the
+   protocol standard is roughly 20 years old.  A summary of the
+   Requirements Level keywords for [RFC8011] is shown below:
+
+   o  SHALL 0
+
+   o  REQUIRED 127
+
+   o  MAY 141
+
+   o  OPTIONAL 45
+
+   o  RECOMMENDED 0
+
+   o  SHOULD 97
+
+   o  MUST 367
+
+   o  ~CVEs 23 [16]
+
+   Delving deeper into the specific vulnerabilities of those 23 CVEs by
+   looking at their associated Common Weaknesses Enumeration CWE [17],
+   we see that around 11 of the vulnerabilities specifically related to
+   out-of-bounds based input validation issues:
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lewis                                                          [Page 12]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   +-----+--------------------------------------------+----------------+
+   | CWE | Title                                      | #Occurences    |
+   |     |                                            | across IPP     |
+   |     |                                            | CVEs           |
+   +-----+--------------------------------------------+----------------+
+   | 120 | Buffer Copy without Checking Size of Input | 4              |
+   |     | (Classic Buffer Overflow)                  |                |
+   |     |                                            |                |
+   | 399 | Resource Management Errors                 | 4              |
+   |     |                                            |                |
+   | 189 | Numeric Errors                             | 3              |
+   |     |                                            |                |
+   | 787 | Out-of-bounds Write                        | 2              |
+   |     |                                            |                |
+   | 77  | Improper Neutralization of Special         | 2              |
+   |     | Elements used In a Command (Command        |                |
+   |     | Injection)                                 |                |
+   |     |                                            |                |
+   | 264 | Permissions                                | 1              |
+   |     |                                            |                |
+   | 119 | Improper Restriction of Operations within  | 1              |
+   |     | the Bounds of a Memory Buffer              |                |
+   |     |                                            |                |
+   | 254 | 7PK - Security Features                    | 1              |
+   |     |                                            |                |
+   | 78  | Improper Neutralization of Special         | 1              |
+   |     | Elements used in an OS Command (OS         |                |
+   |     | Command Injection)                         |                |
+   |     |                                            |                |
+   | 20  | Improper Input Validation                  | 1              |
+   |     |                                            |                |
+   | 134 | Use of Externally-Controlled Format String | 1              |
+   |     |                                            |                |
+   | 93  | Improper Neutralization of CRLF Sequences  | 1              |
+   |     | (CRLF Injection)                           |                |
+   |     |                                            |                |
+   | 290 | Authentication Bypass by Spoofing          | 1              |
+   +-----+--------------------------------------------+----------------+
+
+   NCC Group had found from its research (as seen in CVE-2019-6327 [18])
+   that one of the printers was affected by buffer overflow
+   vulnerabilities in the IPP service, which could allow attackers to
+   effect a Denial of Service (DoS) attack and perhaps execute arbitrary
+   code on affected underlying devices.
+
+   Our researchers had found several vulnerabilities from use of their
+   Fuzzowski Fuzzer [19], specifically in a method for getting
+
+
+
+
+Lewis                                                          [Page 13]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   attributes of a printer.  We found the following entries in [RFC8011]
+   relating to the affected method:
+
+   "
+
+   5.3.20.  attributes-natural-language (naturalLanguage)
+
+   This REQUIRED attribute is populated using the value in the Client-
+   supplied "attributes-natural-language" attribute in the Job Creation
+   request.  It identifies the natural language used for any Job
+   attributes with attribute syntaxes 'text' and 'name' that were
+   supplied by the Client in the Job Creation request.
+
+   "
+
+   Section 5.1.9 'naturalLanguage' specifically called out:
+
+   "The maximum length of 'naturalLanguage' values used to represent IPP
+   attribute values is 63 octets."
+
+   Section B.1.4.10 client-error-request-value-too-long (0x0409)
+   proposes (amongst others), status codes to be returned upon
+   unexpected inputs or events.
+
+   "The IPP object is refusing to service the request because one or
+   more of the Client-supplied attributes have a variable-length value
+   that is longer than the maximum length specified for that attribute."
+
+   It goes on to explain that a value-too-long condition might occur:
+
+   "...when the IPP object is under attack by a Client attempting to
+   exploit security holes present in some IPP objects using fixed-length
+   buffers for reading or manipulating the request URI."
+
+   While the specification of a 63 octet limit, and description of error
+   codes relating to handling overflowed values points to some
+   consideration around potential implementation flaws, we note that
+   there was no use of Requirements Level keywords to draw out these
+   important aspects - i.e. Section 5.1.9 might have been more clearly
+   specified as:
+
+   "The length of 'naturalLanguage' values used to represent IPP
+   attribute values MUST NOT exceed 63 octets."
+
+   While [RFC8011] does have a Security Considerations section, the
+   considerations and scenarios described are fairly naive.  The section
+   begins with:
+
+
+
+
+Lewis                                                          [Page 14]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   "It is difficult to anticipate the security risks that might exist in
+   any given IPP environment.  For example, if IPP is used within a
+   given small business over a private LAN with physical security, the
+   risks of exposing Document data can be low enough that the business
+   will choose not to use encryption on that data.  However, if the
+   connection between the Client and the IPP object is over a public
+   network, the Client can protect the content of the information during
+   transmission through the network with encryption."
+
+   The guidance does not consider a defence-in-depth approach, and does
+   not appreciate modern day office setups whereby many endpoints like
+   laptops and desktops will have Internet connectivity, thus providing
+   a potential mechanism for external attackers to gain a foothold on a
+   network via phishing attacks to then be used as pivot points for
+   attacks against internal printers.  Similarly, the Security
+   Considerations section predates notions and principles of Zero Trust
+   [20] networks.
+
+6.  Other interesting RFC text searches that may be security-relevant
+    (AKA finding good targets for fuzzing)
+
+   The list of RFCs in section 3 of this document sort of serves as a
+   potential useful list for protocol fuzzing, under the assumption that
+   greater ambiguity in their Requirements Levels might correlate with
+   more implementation flaws.  During this research, we also found the
+   following keywords or terms to often relate to security-relevant
+   aspects of protocol definition.  For those wanting to identify
+   potentially interesting targets for security fuzzing, the following
+   non-exhaustive list of search terms (and variations thereof) might
+   help focus in on specific parts of a protocol or protocol state that
+   might present vulnerability in subsequent implementations:
+
+   o  maximum length of
+
+   o  TLV
+
+   o  Type-Length-Value
+
+   o  maximum
+
+   o  minimum
+
+   o  upper limit
+
+   o  lower limit
+
+   o  no more
+
+
+
+
+Lewis                                                          [Page 15]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   o  no more than
+
+   o  no less
+
+   o  no less than
+
+   o  corruption
+
+   o  fatal
+
+   o  fatal error
+
+   o  recover(y)(ing)(able)
+
+   o  attacker
+
+6.1.  Augmenting RFC Analysis with Diff Tools to Identify Potential
+      Security Issues
+
+   The IETF [21] provides useful tools for diffing [22] different
+   versions of RFCs, so as to be able to track changes.  These tools are
+   also useful when analysing RFCs in a security context - they allow
+   for easy viewing of changes in language and protocol specification
+   within each section of an RFC - some of the changes might point to
+   vulnerability either in earlier versions of an RFC (which may have
+   since been obsoleted), or in new versions whereby changes or updates
+   to text have not materially improved upon ambiguity in the
+   specification.  Again, this might help those security researchers
+   seeking to identify interesting parts of a protocol or protocol state
+   to fuzz.  For example, two RFCs for "RTP Payload Format for JPEG-
+   compressed Video" [RFC2035] and [RFC2435], when diffed, shows how a
+   later version of the standard introduced use of the Requirements
+   Level keywords and called out more specifics on offset positioning
+   within headers:
+
+   Before:
+
+   A special header is added to each packet that immediately follows the
+   RTP header:
+
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Type specific |              Fragment Offset                  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      Type     |       Q       |     Width     |     Height    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+
+
+
+Lewis                                                          [Page 16]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   After:
+
+   Each packet contains a special JPEG header which immediately follows
+   the RTP header.  The first 8 bytes of this header, called the "main
+   JPEG header", are as follows:
+
+   0                   1                   2                   3
+   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   | Type-specific |              Fragment Offset                  |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+   |      Type     |       Q       |     Width     |     Height    |
+   +-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+-+
+
+   All fields in this header except for the Fragment Offset field MUST
+   remain the same in all packets that correspond to the same JPEG
+   frame.
+
+   A Restart Marker header and/or Quantization Table header may follow
+   this header, depending on the values of the Type and Q fields.
+
+   When a newer RFC obsoletes an older version, it may also summarise
+   more formally the main changes in an Appendix.  In the example above,
+   Appendix D of the more recent [RFC2435] specifically calls our change
+   made to improve issues around interoperability:
+
+   "
+
+   Appendix D
+
+   This section outlines the changes between this document and its
+   predecessor, RFC 2035.  The changes to the protocol were made with an
+   eye towards causing as few interoperability problems between
+   implementations based on the older text and newer implementations,
+   and indeed, many of the obsolete conventions can still be
+   unambiguously decoded by a newer implementation.  However, use of the
+   older conventions in newer implementations is strongly discouraged.
+
+   "
+
+   In the example above, we might therefore infer that implementations
+   of the RFC Payload Format for JPEG-compressed Video are more likely
+   to suffer from interoperability flaws, and/or security issues owing
+   to less prescriptive language around the protocol definition and
+   operation.
+
+
+
+
+
+
+Lewis                                                          [Page 17]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+7.  Using Graph Databases to Track RFC Development &amp; Asses Internet
+    Complexity
+
+   Up to this point, our RFC research had focussed on a lot of text-
+   based processing of RFC content.  We had noticed that there is useful
+   meta-data around RFCs and the RFC ecosystem, such as chains of
+   update/obsolescence whereby RFCs have been updated and replaced over
+   time.  There are also interesting aspects such as the contributors to
+   RFCs, in terms of who they are, and to which organisations they are
+   affiliated.
+
+7.1.  Visualising RFC Development
+
+   We elected to try and visualise some of the relationships between
+   different RFCs though the use of graphs.  Our first attempt here was
+   to use a graphing framework vis.js [23] to draw a connected graph of
+   all RFCs, with RFC numbers as the nodes, and the edges denoting an
+   'Update' or 'Obsolescence'.  A representation of the output can be
+   found in graphical form here [24].
+
+   The graph highlights a lot of the complexity inherent in the Internet
+   as we know it.  At the centre are a number of core Internet protocol
+   families such as DNS, IP routing, DHCP etc. with complex
+   interconnectivity and chains of updated RFCs.  The non-connected
+   outliers are those RFCs that are distinct and are not updated, or
+   that do not update other RFCs.
+
+   To add more context to this graph and to be able to query aspects of
+   the RFC ecosystem, we decided to generate the equivalent within a
+   graph database (neo4j [25] in this instance) so as to be able to run
+   queries across the RFC meta-data.
+
+   This allowed us to perform more granular and contextual searches.
+   For example, the following cypher [26] query to graphically view RFC
+   Update chains relating to all RFCs that have the word "SIP" in their
+   title:
+
+   MATCH (rfc:RFC)-[:UPDATED_BY]-&gt;(b) WHERE rfc.title =~ '._SIP._'
+   RETURN b, COLLECT(rfc) as updated ORDER BY SIZE(updated)
+
+   A representation of the output can be found in graphical form here
+   [27].
+
+   This graph allowed us to quickly identify [RFC3261] as core to the
+   SIP protocol standard and which has been updated and obsoleted by a
+   number of subsequent RFCs.
+
+
+
+
+
+Lewis                                                          [Page 18]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+7.2.  Visualising RFC Contributors
+
+   We are also able to quickly query authors (by email address) to
+   specific RFCs.  In the query below, we request all contributors to
+   [RFC8011] - Internet Printing Protocol/1.1: Model and Semantics:
+
+   MATCH (rfc:RFC)-[:CONTRIBUTED_TO]-(emails) WHERE rfc.name =~
+   'rfc8011' RETURN rfc, emails
+
+   A representation of the output can be found in graphical form here
+   [28].
+
+   We note that RFCs commonly have more contributors than just those who
+   explicitly list their email addresses within RFCs.
+
+   Taking the above search a bit further, we can map out authors/
+   contributors by email address across a chain of related RFCs.  In the
+   example below, we request the contributors across three of the main
+   Internet Printing Protocol-related RFCs:
+
+   MATCH (rfc:RFC)-[:CONTRIBUTED_TO]-(emails) WHERE rfc.name =~
+   'rfc8011' OR rfc.name =~ 'rfc2911' OR rfc.name =~ 'rfc3381' OR
+   rfc.name =~ 'rfc3382' RETURN rfc, emails
+
+   A representation of the output can be found in graphical form here
+   [29].
+
+7.3.  Most Contributed RFCs
+
+   We can also take a more birds-eye view across all RFCs, and request
+   the top 10 RFCs with most contributors:
+
+   MATCH (a)-[:CONTRIBUTED_TO]-&gt;(b) RETURN b, COLLECT(a) as contributors
+   ORDER BY SIZE(contributors) DESC LIMIT 10
+
+   A representation of the output can be found in graphical form here
+   [30].
+
+7.4.  Most Contribution by Organisation
+
+   We can also search across all email contributors to map out which
+   organisations have made which levels of contribution to the RFC
+   ecosystem.  For example, a search for all RFCs that have been
+   contributed to by Cisco [31] reveals an expectedly large graph owing
+   to many/most Internet protocols being core to Cisco's business:
+
+   MATCH (a)-[:CONTRIBUTED_TO]-&gt;(b) WHERE a.name =~ '._cisco._' RETURN
+   b, COLLECT(a) as contributors ORDER BY SIZE(contributors)
+
+
+
+Lewis                                                          [Page 19]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   A representation of the output can be found in graphical form here
+   [32].
+
+   On a similar theme, in a presentation titled What do 50 years of RFCs
+   and Standardisation of the Internet tell us? [33] by Ignacio Castro
+   et. al. they show how academic contributions to RFCs have declined
+   over time while industry contributions have increased.  In addition,
+   they show how in recent years, contributions by Cisco have declined
+   while contributions by Huawei have increased (slide 16).  We note how
+   graph database analysis of RFCs and their associated metadata can
+   quickly provide these types of insight and help track the evolution
+   of RFCs, their dependencies and their underlying contributors.
+
+8.  Conclusions
+
+   Our foray into RFCs from a security perspective has been superficial
+   at best; thus we provide suggestions rather than concrete
+   recommendations, for improving principles of security by design in
+   the RFC production process.
+
+   We also encourage discussion, debate and further research in this
+   space so as to gather other thoughts, perspectives and research-based
+   evidence on how and where security can be improved throughout the RFC
+   process, so as to minimise the likelihood of subsequent RFC
+   implementation security flaws.  At such point that we may have
+   improved insight and broader perspectives in this domain, we can plan
+   for creation of a Best Current Practice RFC on the topic of improved
+   security in the RFC process.
+
+8.1.  Simplified (and mandated) Requirements Level Keywords
+
+   Our research saw that ambiguous keywords SHOULD and MAY had the
+   second highest number of occurrences across all RFCs.  We've also
+   seen that their intended meaning is only to be interpreted as such
+   when written in uppercase (whereas often they are written in
+   lowercase).  In addition, around 40% of RFCs made no use of uppercase
+   requirements level keywords.
+
+   These observations point to inconsistency in use of these keywords,
+   and possibly misunderstanding about their importance in a security
+   context.  We saw that RFCs relating to Session Initiation Protocol
+   (SIP) made most use of ambiguous keywords, and had the most number of
+   implementation flaws as seen across SIP-based CVEs.  While not
+   conclusive, this suggests that there may be some correlation between
+   the level of ambiguity in RFCs and subsequent implementation security
+   flaws.  We do acknowledge however that implementation flaws often
+   occur due to use of insecure functions or language constructs - e.g.
+   banned SDL function calls [34], which can affect the security of
+
+
+
+Lewis                                                          [Page 20]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   systems that might actually have been correctly-defined in RFC or
+   specification.
+
+   There may be argument here for removing ambiguity by reducing the
+   number of keywords currently available - perhaps a simplified grammar
+   of just 'MUST' and 'MUST NOT' would add clarity?  RECOMMENDED,
+   SHOULD, OPTIONAL, MAY etc. are essentially just variations of the
+   same ambiguous term, so should they simply be removed?  In addition,
+   perhaps a better mandate on the use of a simplified grammar would
+   improve understanding around important aspects of say a protocol
+   design - i.e. when a buffer size 'MUST NOT' exceed 64 bytes, there is
+   little room for ambiguity here, for example.
+
+8.2.  Improvements to Security Considerations
+
+   The Security Considerations sections of many RFCs were either found
+   to be lacking, or naive in their consideration of security aspects.
+   Many weren't even following the best practice set out in [RFC3552]
+   which requires discussion of what is in and out of scope in terms of
+   security with regards to an RFC.  Many RFCs simply read "Security
+   issues are not discussed in this memo", or were variations on the
+   same sentence.
+
+   There is definitely room for improvement in the use of RFC Security
+   Considerations.  We suggest threat modelling exercises to help
+   understand trust boundaries and assumptions about security and
+   security responsibilities.  While we acknowledge that how and where
+   an RFC may eventually be implemented in terms of an operating
+   environment (which would affect how to approach a threat modelling
+   exercise) may not be known exactly, it should at least be possible to
+   put some consideration around likely use-cases.
+
+   For example, the Internet Printing Protocol (IPP) security
+   considerations focussed on use of printers in an office-type
+   environment, with assumptions around other security controls that
+   would likely be in place.  Of course the Internet as we know and use
+   it now is much different and it's not uncommon to find printers
+   directly connected to the Internet (whether deliberately or by
+   accident), while also concepts of perimeter security and trust of
+   internal networks are rapidly diminishing as we see increasing use of
+   concepts such as Zero Trust - essentially, it feels more prudent to
+   assume that any software or device that might implement an RFC
+   (protocol, design, system etc.) could likely be deployed in an
+   insecure environment - threat modelling and designing security from
+   this perspective suddenly makes the security requirements clearer,
+   removes a lot of assumption about security and facilitates principles
+   of defence-in-depth and security by design.
+
+
+
+
+Lewis                                                          [Page 21]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+8.3.  RFC Analysis as a Method of Identifying Fuzzing Targets &amp;
+      Potential Implementation Flaws
+
+   In this paper we briefly explored how RFCs can be read and
+   interpreted from an attacker's perspective in order to help identify
+   potential areas of vulnerability that would more likely manifest
+   themselves in implementation.  The various aspects we've explored in
+   this paper can help those seeking to identify interesting areas for
+   fuzz and security testing - e.g. by focussing on those RFCs that are
+   more ambiguous, or lacking in Security Consideration.  In addition,
+   use of diffing tools can help understand where security issues may
+   have been fixed between RFC revision, and/or where RFC update may
+   have inadvertently introduced new scope for vulnerability.
+
+   We mention this in the sense that ideally, the RFC corpus and
+   interpretations thereof, should not provide mechanisms for
+   identifying potential vulnerability.  Rather, the suggestions in this
+   document, if implemented and followed, should help improve the
+   overall security aspects of RFCs and thus in future, minimise the
+   effectiveness of any processing of those RFCs in attempts at
+   discovering areas of potential vulnerability.
+
+8.4.  Graph Databases to Inspect Properties of RFCs
+
+   In this paper we've explored the use of graph databases to visualise
+   (and enumerate) relationships between different RFCs and their
+   contributors.  Once parsed into a graph database format, we were able
+   to run queries across the corpus and visualise the results of those
+   queries - an example included querying which RFCs had been subjected
+   to most contribution or revision, which could be an indication of
+   greater complexity and thus potential for implementation flaw.
+
+   More metadata about RFCs, and better ways to parse RFCs would
+   significantly improve the ability to use graph databases to query and
+   reason about their properties.  We note that suggested changes to the
+   RFC format through use of XML (as documented in [RFC7990] should help
+   considerably in this endeavour.
+
+9.  50 Years of RFCs &amp; What Next?
+
+   During production of this document we found [RFC8700] which "marks
+   the fiftieth anniversary for the RFC Series.  It includes both
+   retrospective material from individuals involved at key inflection
+   points as well as a review of the current state of affairs.  It
+   concludes with thoughts on possibilities for the next fifty years for
+   the Series."
+
+
+
+
+
+Lewis                                                          [Page 22]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   We note that there was no mention of security/cyber/assurance/
+   resilience etc. in this RFC.  As per [RFC3552], there was indeed a
+   Security Considerations section, which simply read "This document has
+   no security considerations."  The lack of mention of security in this
+   retrospective and forward-looking RFC does seem like a significant
+   oversight, and is not encouraging on how security considerations and
+   design might be better coupled with RFCs moving forwards.  Adding to
+   the concern here, on slide 21 of Castro et. al.  'What do 50 years of
+   RFCs and Standardisation of the Internet tell us?' we're shown that
+   RFCs are getting longer, while slide 23 shows that RFCs are
+   increasingly involving more people, institutions, countries, working
+   groups etc.  Greater complexity in length and contributors, without
+   any changes or adaptations to cater for security could present a
+   missed opportunity for minimising future security design and
+   implementation flaws.
+
+   Others have previously proposed changes to the RFC process to
+   facilitate improved security.  During this research we found a great
+   paper A Case for Exploit-Robust and Attack-Aware Protocol RFCs [35]
+   by Pothamsetty and Mateti from 2004, who propose erfc (Enhanced rfc)
+   - echoing much of our own observation they write:
+
+   "rfcs should be written in a way that none of the sections are
+   ambiguous.  Invariants on header values and sizes should be specified
+   in the rfc so that the implementer would not have freedom for sloppy
+   interpretation of packets.  It should be mandatory that the rfc
+   writers take the protocol specification through a reasonable threat
+   model and consider possible attack scenarios."
+
+   We noted how [RFC7990] speaks to "changes being made to the RFC
+   format involve breaking away from solely ASCII plain text and moving
+   to a canonical format that includes all the information required for
+   rendering a document into a wide variety of publication formats."
+   This is encouraging and should help improve readability of future
+   RFCs.  When rendering future RFCs we propose better use of graphics
+   to illustrate concepts, and use of colour to draw attention to key or
+   critical aspects, such as security-impacting design decisions,
+   requirements level keywords etc.  Indeed this document was
+   deliberately written in the style of an RFC to demonstrate current
+   limitations around presentation of graphics and imagery, and how the
+   monochrome nature of RFCs is not particularly inviting for the
+   reader.  While this style was appropriate (and pretty much all that
+   was available) 50 years ago, it certainly feels outdated by today's
+   standards and technology.
+
+   In conclusion, we acknowledge and stress that Internet security is in
+   no way the sole responsibility of the IETF, RFCs and their authors.
+   Rather, as part of defence-in-depth we believe there is room for
+
+
+
+Lewis                                                          [Page 23]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   improvement in how RFC security is prescribed and mandated -
+   improvements will help minimise the risk of vulnerability manifesting
+   at the point of implementation.  Once a security-robust RFC is
+   completed, it is then for developers to implement that RFC, and to do
+   so securely - how they do this is an entirely different (and non-
+   trivial) topic falling beyond the scope of RFCs and this document.
+
+10.  Security Considerations
+
+   Security considerations are the essence of this this document.
+
+11.  IANA Considerations
+
+   This document has no IANA actions.
+
+12.  References
+
+12.1.  Normative References
+
+   [RFC0001]  Crocker, S., "Host Software", RFC 1, DOI 10.17487/RFC0001,
+              April 1969, &lt;https://www.rfc-editor.org/info/rfc1&gt;.
+
+   [RFC2035]  Berc, L., Fenner, W., Frederick, R., and S. McCanne, "RTP
+              Payload Format for JPEG-compressed Video", RFC 2035,
+              DOI 10.17487/RFC2035, October 1996,
+              &lt;https://www.rfc-editor.org/info/rfc2035&gt;.
+
+   [RFC2068]  Fielding, R., Gettys, J., Mogul, J., Frystyk, H., and T.
+              Berners-Lee, "Hypertext Transfer Protocol -- HTTP/1.1",
+              RFC 2068, DOI 10.17487/RFC2068, January 1997,
+              &lt;https://www.rfc-editor.org/info/rfc2068&gt;.
+
+   [RFC2119]  Bradner, S., "Key words for use in RFCs to Indicate
+              Requirement Levels", BCP 14, RFC 2119,
+              DOI 10.17487/RFC2119, March 1997,
+              &lt;https://www.rfc-editor.org/info/rfc2119&gt;.
+
+   [RFC2408]  Maughan, D., Schertler, M., Schneider, M., and J. Turner,
+              "Internet Security Association and Key Management Protocol
+              (ISAKMP)", RFC 2408, DOI 10.17487/RFC2408, November 1998,
+              &lt;https://www.rfc-editor.org/info/rfc2408&gt;.
+
+   [RFC2435]  Berc, L., Fenner, W., Frederick, R., McCanne, S., and P.
+              Stewart, "RTP Payload Format for JPEG-compressed Video",
+              RFC 2435, DOI 10.17487/RFC2435, October 1998,
+              &lt;https://www.rfc-editor.org/info/rfc2435&gt;.
+
+
+
+
+
+Lewis                                                          [Page 24]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   [RFC2543]  Handley, M., Schulzrinne, H., Schooler, E., and J.
+              Rosenberg, "SIP: Session Initiation Protocol", RFC 2543,
+              DOI 10.17487/RFC2543, March 1999,
+              &lt;https://www.rfc-editor.org/info/rfc2543&gt;.
+
+   [RFC2911]  Hastings, T., Ed., Herriot, R., deBry, R., Isaacson, S.,
+              and P. Powell, "Internet Printing Protocol/1.1: Model and
+              Semantics", RFC 2911, DOI 10.17487/RFC2911, September
+              2000, &lt;https://www.rfc-editor.org/info/rfc2911&gt;.
+
+   [RFC3261]  Rosenberg, J., Schulzrinne, H., Camarillo, G., Johnston,
+              A., Peterson, J., Sparks, R., Handley, M., and E.
+              Schooler, "SIP: Session Initiation Protocol", RFC 3261,
+              DOI 10.17487/RFC3261, June 2002,
+              &lt;https://www.rfc-editor.org/info/rfc3261&gt;.
+
+   [RFC3381]  Hastings, T., Lewis, H., and R. Bergman, "Internet
+              Printing Protocol (IPP): Job Progress Attributes",
+              RFC 3381, DOI 10.17487/RFC3381, September 2002,
+              &lt;https://www.rfc-editor.org/info/rfc3381&gt;.
+
+   [RFC3382]  deBry, R., Hastings, T., Herriot, R., Ocke, K., and P.
+              Zehler, "Internet Printing Protocol (IPP): The
+              'collection' attribute syntax", RFC 3382,
+              DOI 10.17487/RFC3382, September 2002,
+              &lt;https://www.rfc-editor.org/info/rfc3382&gt;.
+
+   [RFC3459]  Burger, E., "Critical Content Multi-purpose Internet Mail
+              Extensions (MIME) Parameter", RFC 3459,
+              DOI 10.17487/RFC3459, January 2003,
+              &lt;https://www.rfc-editor.org/info/rfc3459&gt;.
+
+   [RFC3552]  Rescorla, E. and B. Korver, "Guidelines for Writing RFC
+              Text on Security Considerations", BCP 72, RFC 3552,
+              DOI 10.17487/RFC3552, July 2003,
+              &lt;https://www.rfc-editor.org/info/rfc3552&gt;.
+
+   [RFC3920]  Saint-Andre, P., Ed., "Extensible Messaging and Presence
+              Protocol (XMPP): Core", RFC 3920, DOI 10.17487/RFC3920,
+              October 2004, &lt;https://www.rfc-editor.org/info/rfc3920&gt;.
+
+   [RFC5661]  Shepler, S., Ed., Eisler, M., Ed., and D. Noveck, Ed.,
+              "Network File System (NFS) Version 4 Minor Version 1
+              Protocol", RFC 5661, DOI 10.17487/RFC5661, January 2010,
+              &lt;https://www.rfc-editor.org/info/rfc5661&gt;.
+
+
+
+
+
+
+Lewis                                                          [Page 25]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   [RFC6120]  Saint-Andre, P., "Extensible Messaging and Presence
+              Protocol (XMPP): Core", RFC 6120, DOI 10.17487/RFC6120,
+              March 2011, &lt;https://www.rfc-editor.org/info/rfc6120&gt;.
+
+   [RFC6921]  Hinden, R., "Design Considerations for Faster-Than-Light
+              (FTL) Communication", RFC 6921, DOI 10.17487/RFC6921,
+              April 2013, &lt;https://www.rfc-editor.org/info/rfc6921&gt;.
+
+   [RFC7826]  Schulzrinne, H., Rao, A., Lanphier, R., Westerlund, M.,
+              and M. Stiemerling, Ed., "Real-Time Streaming Protocol
+              Version 2.0", RFC 7826, DOI 10.17487/RFC7826, December
+              2016, &lt;https://www.rfc-editor.org/info/rfc7826&gt;.
+
+   [RFC7990]  Flanagan, H., "RFC Format Framework", RFC 7990,
+              DOI 10.17487/RFC7990, December 2016,
+              &lt;https://www.rfc-editor.org/info/rfc7990&gt;.
+
+   [RFC8011]  Sweet, M. and I. McDonald, "Internet Printing
+              Protocol/1.1: Model and Semantics", STD 92, RFC 8011,
+              DOI 10.17487/RFC8011, January 2017,
+              &lt;https://www.rfc-editor.org/info/rfc8011&gt;.
+
+   [RFC8174]  Leiba, B., "Ambiguity of Uppercase vs Lowercase in RFC
+              2119 Key Words", BCP 14, RFC 8174, DOI 10.17487/RFC8174,
+              May 2017, &lt;https://www.rfc-editor.org/info/rfc8174&gt;.
+
+   [RFC8700]  Flanagan, H., Ed., "Fifty Years of RFCs", RFC 8700,
+              DOI 10.17487/RFC8700, December 2019,
+              &lt;https://www.rfc-editor.org/info/rfc8700&gt;.
+
+12.2.  URIs
+
+   [1] https://www.internethalloffame.org/inductees/steve-crocker
+
+   [2] https://www.rfc-editor.org/rfc-index-100d.html
+
+   [3] https://cve.mitre.org/cgi-bin/cvekey.cgi?
+
+   [4] https://en.wikipedia.org/wiki/Request_for_Comments#Status
+
+   [5] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=SIP
+
+   [6] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=SIP
+
+   [7] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=MIME
+
+   [8] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=NFS
+
+
+
+
+Lewis                                                          [Page 26]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   [9] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=RADIUS
+
+   [10] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=RTSP
+
+   [11] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=XMPP
+
+   [12] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=XMPP
+
+   [13] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=ISAKMP
+
+   [14] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=HTTP/1.1
+
+   [15] https://www.nccgroup.com/us/about-us/newsroom-and-events/press-
+        releases/2019/ncc-group-uncovers-dozens-of-vulnerabilities-in-
+        six-leading-enterprise-printers/
+
+   [16] https://cve.mitre.org/cgi-bin/cvekey.cgi?keyword=IPP
+
+   [17] https://cwe.mitre.org/index.html
+
+   [18] https://support.hp.com/us-en/document/c06356322
+
+   [19] https://github.com/nccgroup/fuzzowski
+
+   [20] https://blog.paloaltonetworks.com/author/john-kindervag/
+
+   [21] https://www.ietf.org/
+
+   [22] https://tools.ietf.org/rfcdiff
+
+   [23] https://visjs.org/
+
+   [24] https://research.nccgroup.com/wp-content/uploads/2020/10/RFC-
+        interlinks2.png
+
+   [25] https://neo4j.com/
+
+   [26] https://neo4j.com/developer/cypher/
+
+   [27] https://research.nccgroup.com/wp-content/uploads/2020/10/SIP-
+        visual.png
+
+   [28] https://research.nccgroup.com/wp-content/uploads/2020/10/
+        contributor.png
+
+   [29] https://research.nccgroup.com/wp-content/uploads/2020/10/
+        printer-contributors.png
+
+
+
+
+Lewis                                                          [Page 27]
+
+For Discussion               RFCs &amp; Security                January 2021
+
+
+   [30] https://research.nccgroup.com/wp-content/uploads/2020/10/
+        greatest-contrib.png
+
+   [31] https://www.cisco.com/
+
+   [32] https://research.nccgroup.com/wp-content/uploads/2020/10/
+        cisco2.png
+
+   [33] https://coseners.net/wp-content/uploads/2020/07/2020-07-08_50-
+        years-IETF_coseners.pdf
+
+   [34] https://docs.microsoft.com/en-us/previous-versions/
+        bb288454(v=msdn.10)
+
+   [35] https://www.researchgate.net/profile/Prabhaker_Mateti/
+        publication/232615230_A_case_for_exploit-robust_and_attack-
+        aware_protocol_RFCs/links/00b4952636dc81088b000000/A-case-for-
+        exploit-robust-and-attack-aware-protocol-RFCs.pdf
+
+Acknowledgments
+
+   The author acknowledges the helpful comments and suggestions received
+   from Ollie Whitehouse.
+
+Author's Address
+
+   Matt Lewis
+   NCC Group
+
+   Email: matt.lewis@nccgroup.com
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Lewis                                                          [Page 28]
+</pre></body></html>
